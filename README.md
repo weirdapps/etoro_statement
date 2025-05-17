@@ -50,5 +50,5 @@ The tool generates a clean, minimal formatted table with sections:
 
 ![alt text](example_output.png)
 
-ROI is calculated and displayed as a percentage based on Net Realized Profit divided by the absolute value of Net Investment.
+ROI is calculated as a percentage based on Profit over Net Investment. It does not take into account the timing of any deposits or withdrawals made.
 
