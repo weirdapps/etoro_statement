@@ -106,6 +106,7 @@ def process_etoro_statement(file_path):
             elif "Dividend" in name:
                 metrics['Dividend Income'] += amount
             elif "fee" in name.lower() or "charge" in name.lower() or (amount < 0 and not "Dividend" in name and not "Profit or Loss" in name):
+                # Store expenses as positive values for consistent handling
                 metrics['Total Expenses and Fees'] += abs(amount)
             elif amount > 0 and not "Profit or Loss" in name and not "Dividend" in name:
                 metrics['Other Income'] += amount
@@ -114,8 +115,8 @@ def process_etoro_statement(file_path):
     metrics['Net Realized Profit'] = (
         metrics['Realized Gains'] + 
         metrics['Dividend Income'] + 
-        metrics['Other Income'] + 
-        metrics['Total Expenses and Fees']  # Expenses are now negative, so we add them
+        metrics['Other Income'] - 
+        metrics['Total Expenses and Fees']  # Expenses should be subtracted from profit
     )
     
     # 5. Calculate Unrealized Profit
