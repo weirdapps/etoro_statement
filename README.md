@@ -48,29 +48,7 @@ This will:
 
 The tool generates a clean, minimal formatted table with sections:
 
-```
- eToro Financial Summary 
- METRIC                             VALUE 
- Investment                      
-   Deposits                   $390,933.67 
-   Withdrawals                $22,500.00 
-   Net Investment             $368,433.67 
- ────────────────────────────────
- Realized                        
-   Realized Gains             +$28,726.33 
-   Dividend Income             +$1,417.25 
-   Other Income                +$4,473.93 
-   Expenses and Fees           -$1,090.28 
-   Net Realized Profit        +$33,527.23 
-   Current Realized Equity    $402,850.35 
- ────────────────────────────────
- Unrealized                      
-   Unrealized Profit          +$24,080.08 
-   Current Unrealized Equity  $426,930.43 
- ────────────────────────────────
- Performance                     
-   Return on Investment            9.10% 
-```
+![alt text](example_output.png)
 
 ROI is calculated and displayed as a percentage based on Net Realized Profit divided by the absolute value of Net Investment.
 
