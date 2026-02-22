@@ -6,3 +6,6 @@
 *.tmp
 *.bak
 .claude
+.envrc
+.env
+venv
