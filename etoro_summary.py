@@ -16,7 +16,6 @@ Requirements:
 
 import pandas as pd
 import sys
-from tabulate import tabulate
 from rich.console import Console
 from rich.table import Table
 from rich import box
