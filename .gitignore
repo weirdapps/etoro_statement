@@ -94,3 +94,9 @@ Thumbs.db
 
 # Git worktrees
 .worktrees/
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
