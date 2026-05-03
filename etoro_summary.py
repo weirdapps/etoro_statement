@@ -14,11 +14,12 @@ Requirements:
     - rich
 """
 
-import pandas as pd
 import sys
+
+import pandas as pd
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 
 def process_etoro_statement(file_path):
@@ -62,9 +63,7 @@ def process_etoro_statement(file_path):
                 metrics["Current Unrealized Equity"] = float(row.iloc[1])
 
     # 2. Calculate Net Investment
-    metrics["Net Investment"] = metrics["Total Deposits"] - abs(
-        metrics["Total Withdrawals"]
-    )
+    metrics["Net Investment"] = metrics["Total Deposits"] - abs(metrics["Total Withdrawals"])
 
     # 3. Extract realized gains, dividends, other income, and expenses from Financial Summary
     amount_columns = [
@@ -109,11 +108,7 @@ def process_etoro_statement(file_path):
             elif (
                 "fee" in name.lower()
                 or "charge" in name.lower()
-                or (
-                    amount < 0
-                    and "Dividend" not in name
-                    and "Profit or Loss" not in name
-                )
+                or (amount < 0 and "Dividend" not in name and "Profit or Loss" not in name)
             ):
                 # Store expenses as positive values for consistent handling
                 metrics["Total Expenses and Fees"] += abs(amount)
@@ -125,16 +120,11 @@ def process_etoro_statement(file_path):
         metrics["Realized Gains"]
         + metrics["Dividend Income"]
         + metrics["Other Income"]
-        - metrics[
-            "Total Expenses and Fees"
-        ]  # Expenses should be subtracted from profit
+        - metrics["Total Expenses and Fees"]  # Expenses should be subtracted from profit
     )
 
     # 5. Calculate Unrealized Profit
-    if (
-        metrics["Current Unrealized Equity"] > 0
-        and metrics["Current Realized Equity"] > 0
-    ):
+    if metrics["Current Unrealized Equity"] > 0 and metrics["Current Realized Equity"] > 0:
         metrics["Unrealized Profit"] = (
             metrics["Current Unrealized Equity"] - metrics["Current Realized Equity"]
         )
@@ -240,9 +230,7 @@ def format_financial_table(metrics):
 
                     # Add row with appropriate styling
                     if value_style:
-                        table.add_row(
-                            f"  {display_key}", f"[{value_style}]{formatted_value}[/]"
-                        )
+                        table.add_row(f"  {display_key}", f"[{value_style}]{formatted_value}[/]")
                     else:
                         table.add_row(f"  {display_key}", formatted_value)
                 else:
@@ -268,9 +256,7 @@ def main():
 
     # Check for input file argument
     if len(sys.argv) < 2:
-        console.print(
-            "[bold red]Usage:[/] python etoro_summary.py <path_to_etoro_statement.xlsx>"
-        )
+        console.print("[bold red]Usage:[/] python etoro_summary.py <path_to_etoro_statement.xlsx>")
         sys.exit(1)
 
     file_path = sys.argv[1]

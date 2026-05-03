@@ -40,6 +40,7 @@ python etoro_summary.py etoro-account-statement-1-1-2023-5-15-2025.xlsx
 ```
 
 This will:
+
 1. Process the eToro statement file
 2. Display a comprehensive financial summary in the terminal
 3. Generate a CSV file with the complete metrics (saved in the same directory as the input file)
@@ -51,4 +52,3 @@ The tool generates a clean, minimal formatted table with sections:
 ![alt text](example_output.png)
 
 ROI is calculated as a percentage based on Net Realized Profit over Net Investment. It does not take into account the timing of any deposits or withdrawals made or the unrealized profit.
-
