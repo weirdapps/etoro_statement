@@ -48,4 +48,5 @@ addopts = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
+    "ignore::pytest.PytestConfigWarning",
 ]
