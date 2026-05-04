@@ -21,8 +21,23 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
+# Financial metrics constants
+TOTAL_DEPOSITS = "Total Deposits"
+TOTAL_WITHDRAWALS = "Total Withdrawals"
+NET_INVESTMENT = "Net Investment"
+REALIZED_GAINS = "Realized Gains"
+DIVIDEND_INCOME = "Dividend Income"
+OTHER_INCOME = "Other Income"
+TOTAL_EXPENSES_AND_FEES = "Total Expenses and Fees"
+NET_REALIZED_PROFIT = "Net Realized Profit"
+CURRENT_REALIZED_EQUITY = "Current Realized Equity"
+CURRENT_UNREALIZED_EQUITY = "Current Unrealized Equity"
+UNREALIZED_PROFIT = "Unrealized Profit"
+RETURN_ON_INVESTMENT = "Return on Investment"
+PROFIT_OR_LOSS = "Profit or Loss"
 
-def process_etoro_statement(file_path):
+
+def process_etoro_statement(file_path):  # noqa: S3776 - sequential data extraction orchestration
     """Process eToro statement Excel file and return key financial metrics."""
 
     # Load all sheets from the Excel file
@@ -35,17 +50,17 @@ def process_etoro_statement(file_path):
 
     # Initialize metrics dictionary
     metrics = {
-        "Total Deposits": 0,
-        "Total Withdrawals": 0,
-        "Net Investment": 0,
-        "Realized Gains": 0,
-        "Dividend Income": 0,
-        "Other Income": 0,
-        "Total Expenses and Fees": 0,
-        "Net Realized Profit": 0,
-        "Current Realized Equity": 0,
-        "Current Unrealized Equity": 0,
-        "Unrealized Profit": 0,
+        TOTAL_DEPOSITS: 0.0,
+        TOTAL_WITHDRAWALS: 0.0,
+        NET_INVESTMENT: 0.0,
+        REALIZED_GAINS: 0.0,
+        DIVIDEND_INCOME: 0.0,
+        OTHER_INCOME: 0.0,
+        TOTAL_EXPENSES_AND_FEES: 0.0,
+        NET_REALIZED_PROFIT: 0.0,
+        CURRENT_REALIZED_EQUITY: 0.0,
+        CURRENT_UNREALIZED_EQUITY: 0.0,
+        UNREALIZED_PROFIT: 0.0,
     }
 
     # 1. Extract deposits and withdrawals from Account Summary
@@ -54,16 +69,16 @@ def process_etoro_statement(file_path):
             details = row["Details"]
 
             if details == "Deposits" and pd.notna(row.iloc[1]):
-                metrics["Total Deposits"] = float(row.iloc[1])
+                metrics[TOTAL_DEPOSITS] = float(row.iloc[1])
             elif details == "Withdrawals" and pd.notna(row.iloc[1]):
-                metrics["Total Withdrawals"] = float(row.iloc[1])
+                metrics[TOTAL_WITHDRAWALS] = float(row.iloc[1])
             elif details == "Ending Realized Equity" and pd.notna(row.iloc[1]):
-                metrics["Current Realized Equity"] = float(row.iloc[1])
+                metrics[CURRENT_REALIZED_EQUITY] = float(row.iloc[1])
             elif details == "Ending Unrealized Equity" and pd.notna(row.iloc[1]):
-                metrics["Current Unrealized Equity"] = float(row.iloc[1])
+                metrics[CURRENT_UNREALIZED_EQUITY] = float(row.iloc[1])
 
     # 2. Calculate Net Investment
-    metrics["Net Investment"] = metrics["Total Deposits"] - abs(metrics["Total Withdrawals"])
+    metrics[NET_INVESTMENT] = metrics[TOTAL_DEPOSITS] - abs(metrics[TOTAL_WITHDRAWALS])
 
     # 3. Extract realized gains, dividends, other income, and expenses from Financial Summary
     amount_columns = [
@@ -93,7 +108,7 @@ def process_etoro_statement(file_path):
     for _, row in financial_summary.iterrows():
         if pd.notna(row.get("Name")) and pd.notna(row.get(amount_column)):
             name = row["Name"]
-            amount = 0
+            amount = 0.0
 
             try:
                 amount = float(row[amount_column])
@@ -101,43 +116,43 @@ def process_etoro_statement(file_path):
                 continue
 
             # Categorize financial items
-            if "Profit or Loss" in name and amount > 0:
-                metrics["Realized Gains"] += amount
+            if PROFIT_OR_LOSS in name and amount > 0:
+                metrics[REALIZED_GAINS] += amount
             elif "Dividend" in name:
-                metrics["Dividend Income"] += amount
+                metrics[DIVIDEND_INCOME] += amount
             elif (
                 "fee" in name.lower()
                 or "charge" in name.lower()
-                or (amount < 0 and "Dividend" not in name and "Profit or Loss" not in name)
+                or (amount < 0 and "Dividend" not in name and PROFIT_OR_LOSS not in name)
             ):
                 # Store expenses as positive values for consistent handling
-                metrics["Total Expenses and Fees"] += abs(amount)
-            elif amount > 0 and "Profit or Loss" not in name and "Dividend" not in name:
-                metrics["Other Income"] += amount
+                metrics[TOTAL_EXPENSES_AND_FEES] += abs(amount)
+            elif amount > 0 and PROFIT_OR_LOSS not in name and "Dividend" not in name:
+                metrics[OTHER_INCOME] += amount
 
     # 4. Calculate Net Realized Profit
-    metrics["Net Realized Profit"] = (
-        metrics["Realized Gains"]
-        + metrics["Dividend Income"]
-        + metrics["Other Income"]
-        - metrics["Total Expenses and Fees"]  # Expenses should be subtracted from profit
+    metrics[NET_REALIZED_PROFIT] = (
+        metrics[REALIZED_GAINS]
+        + metrics[DIVIDEND_INCOME]
+        + metrics[OTHER_INCOME]
+        - metrics[TOTAL_EXPENSES_AND_FEES]  # Expenses should be subtracted from profit
     )
 
     # 5. Calculate Unrealized Profit
-    if metrics["Current Unrealized Equity"] > 0 and metrics["Current Realized Equity"] > 0:
-        metrics["Unrealized Profit"] = (
-            metrics["Current Unrealized Equity"] - metrics["Current Realized Equity"]
+    if metrics[CURRENT_UNREALIZED_EQUITY] > 0 and metrics[CURRENT_REALIZED_EQUITY] > 0:
+        metrics[UNREALIZED_PROFIT] = (
+            metrics[CURRENT_UNREALIZED_EQUITY] - metrics[CURRENT_REALIZED_EQUITY]
         )
 
     return metrics
 
 
-def format_financial_table(metrics):
+def format_financial_table(metrics):  # noqa: S3776 - presentation formatting logic
     """Format the metrics into a clean, minimal tabular presentation using Rich."""
 
     # Calculate ROI
     roi_value, roi_formatted = calculate_roi(metrics)
-    metrics["Return on Investment"] = roi_formatted
+    metrics[RETURN_ON_INVESTMENT] = roi_formatted
 
     # Create a structured Rich table with better styling
     table = Table(
@@ -157,27 +172,27 @@ def format_financial_table(metrics):
         # Section: Investment Summary
         {
             "section": "Investment",
-            "metrics": ["Total Deposits", "Total Withdrawals", "Net Investment"],
+            "metrics": [TOTAL_DEPOSITS, TOTAL_WITHDRAWALS, NET_INVESTMENT],
         },
         # Section: Realized Performance
         {
             "section": "Realized",
             "metrics": [
-                "Realized Gains",
-                "Dividend Income",
-                "Other Income",
-                "Total Expenses and Fees",
-                "Net Realized Profit",
-                "Current Realized Equity",
+                REALIZED_GAINS,
+                DIVIDEND_INCOME,
+                OTHER_INCOME,
+                TOTAL_EXPENSES_AND_FEES,
+                NET_REALIZED_PROFIT,
+                CURRENT_REALIZED_EQUITY,
             ],
         },
         # Section: Unrealized Performance
         {
             "section": "Unrealized",
-            "metrics": ["Unrealized Profit", "Current Unrealized Equity"],
+            "metrics": [UNREALIZED_PROFIT, CURRENT_UNREALIZED_EQUITY],
         },
         # Section: Performance Metrics
-        {"section": "Performance", "metrics": ["Return on Investment"]},
+        {"section": "Performance", "metrics": [RETURN_ON_INVESTMENT]},
     ]
 
     # Populate the table with sections and metrics
@@ -197,7 +212,7 @@ def format_financial_table(metrics):
                         formatted_value = value
                     else:
                         # Special case for expenses and fees - show as negative
-                        if key == "Total Expenses and Fees":
+                        if key == TOTAL_EXPENSES_AND_FEES:
                             value = -abs(value)  # Make expenses negative
                             formatted_value = f"-${abs(value):,.2f}"
                         else:
@@ -212,7 +227,7 @@ def format_financial_table(metrics):
                     # Determine color based on value (using minimal color palette)
                     value_style = ""
                     if isinstance(value, str):
-                        if "Return on Investment" in key and "N/A" not in value:
+                        if RETURN_ON_INVESTMENT in key and "N/A" not in value:
                             roi_numeric = float(value.replace("%", "").replace("+", ""))
                             value_style = "green" if roi_numeric > 0 else "red"
                     else:
@@ -241,8 +256,8 @@ def format_financial_table(metrics):
 
 def calculate_roi(metrics):
     """Calculate and return the ROI as a percentage and value."""
-    if metrics["Net Investment"] != 0:
-        roi = (metrics["Net Realized Profit"] / abs(metrics["Net Investment"])) * 100
+    if metrics[NET_INVESTMENT] != 0:
+        roi = (metrics[NET_REALIZED_PROFIT] / abs(metrics[NET_INVESTMENT])) * 100
         sign = "+" if roi > 0 else ""
         return roi, f"{sign}{roi:.2f}%"
     return 0, "N/A"
