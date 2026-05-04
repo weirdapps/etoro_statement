@@ -24,5 +24,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
-      - run: pip install pytest
-      - run: pytest || exit_code=$?; if [ "${exit_code:-0}" -eq 5 ]; then echo "No tests collected — skipping"; else exit ${exit_code:-0}; fi
+      - run: pip install pytest pytest-cov
+      - run: |
+          pytest || exit_code=$?
+          if [ "${exit_code:-0}" -eq 5 ]; then
+            echo "No tests collected — skipping"
+          else
+            exit ${exit_code:-0}
+          fi
