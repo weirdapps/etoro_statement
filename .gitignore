@@ -24,11 +24,11 @@ wheels/
 MANIFEST
 
 # Virtual Environments
-venv
+venv/
+.venv/
 env/
 ENV/
 .env/
-.venv
 env.bak/
 venv.bak/
 
