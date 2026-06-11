@@ -1,30 +1,35 @@
 # eToro Account Statement Processor
 
+[![CI](https://github.com/weirdapps/etoro_statement/actions/workflows/ci.yml/badge.svg)](https://github.com/weirdapps/etoro_statement/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/weirdapps/etoro_statement/actions/workflows/codeql.yml/badge.svg)](https://github.com/weirdapps/etoro_statement/actions/workflows/codeql.yml)
+[![SonarCloud](https://github.com/weirdapps/etoro_statement/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/weirdapps/etoro_statement/actions/workflows/sonarcloud.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+
 A Python tool that processes eToro account statements and generates comprehensive financial summaries.
 
 ## Overview
 
-This tool extracts essential financial metrics from eToro Excel-based account statements and provides a clean, organized summary focusing on:
+Extracts key financial metrics from eToro Excel-based account statements and presents them in a clean, organized table. Results are also saved to CSV for further analysis.
 
-- Investment summary (deposits, withdrawals, net investment)
-- Realized performance (gains, dividends, income, expenses, profits)
-- Unrealized performance (unrealized profit, current equity)
-- Performance metrics (Return on Investment)
+**Metrics covered:**
 
-The tool automatically saves all extracted metrics to a CSV file for further analysis.
+- **Investment summary** — deposits, withdrawals, net investment
+- **Realized performance** — gains, dividends, other income, expenses and fees, net realized profit
+- **Unrealized performance** — unrealized profit, current equity
+- **ROI** — return on investment as a percentage of net realized profit over net investment (excludes timing of cash flows and unrealized gains)
 
 ## Requirements
 
-- Python 3.6+
-- pandas
-- openpyxl
-- rich
-- tabulate
+- Python 3.12
+- `pandas`
+- `openpyxl`
+- `rich`
 
-Install the required packages with:
+Install dependencies:
 
 ```bash
-pip install pandas openpyxl rich tabulate
+pip install pandas openpyxl rich
 ```
 
 ## Usage
@@ -39,16 +44,16 @@ python etoro_summary.py path_to_statement.xlsx
 python etoro_summary.py etoro-account-statement-1-1-2023-5-15-2025.xlsx
 ```
 
-This will:
+The tool will:
 
-1. Process the eToro statement file
-2. Display a comprehensive financial summary in the terminal
-3. Generate a CSV file with the complete metrics (saved in the same directory as the input file)
+1. Read the `Account Summary` and `Financial Summary` sheets from the Excel file
+2. Display a formatted financial summary in the terminal
+3. Save a CSV file with the complete metrics alongside the input file
 
-## Output Example
+## Output
 
-The tool generates a clean, minimal formatted table with sections:
+![Example output showing a formatted financial summary table](example_output.png)
 
-![alt text](example_output.png)
+## License
 
-ROI is calculated as a percentage based on Net Realized Profit over Net Investment. It does not take into account the timing of any deposits or withdrawals made or the unrealized profit.
+[MIT](LICENSE)
