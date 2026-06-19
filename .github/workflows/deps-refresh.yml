@@ -1,0 +1,56 @@
+name: Monthly Dependency Refresh
+
+on:
+  schedule:
+    - cron: "23 4 6 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: deps-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Refresh lockfile
+        run: |
+          pip install pip-tools
+          pip-compile --upgrade --generate-hashes \
+            --output-file=requirements-lock.txt requirements.txt
+
+      - name: Validate (install + tests)
+        run: |
+          pip install --require-hashes -r requirements-lock.txt
+          pip install pytest pytest-cov
+          pytest || exit_code=$?
+          if [ "${exit_code:-0}" -eq 5 ]; then
+            echo "No tests collected — skipping"
+          else
+            exit ${exit_code:-0}
+          fi
+
+      - name: Open PR with refreshed lockfile
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PUSH_PAT || github.token }}
+          branch: deps/monthly-refresh
+          delete-branch: true
+          commit-message: "deps: monthly lockfile refresh"
+          title: "deps: monthly dependency refresh"
+          body: |
+            Automated monthly refresh of the committed lockfile to the latest
+            resolver-compatible versions. CI (tests) passed on this branch.
+            Review and merge if green.
+          labels: dependencies

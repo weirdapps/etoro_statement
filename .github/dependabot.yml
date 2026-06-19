@@ -4,6 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Only propose direct dependency updates. Transitive bumps are doomed:
+    # the committed lockfile resolver reverts them, so those PRs never merge.
+    # The monthly deps-refresh.yml workflow keeps transitive deps fresh instead.
+    allow:
+      - dependency-type: "direct"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
