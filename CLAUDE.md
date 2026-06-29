@@ -49,6 +49,12 @@ etoro_statement/
 - Positive values colored green, negative red
 - Exits with `SystemExit` on missing file
 
+## eToro API
+
+Canonical domain: `https://www.etoro.com/api/public/v1`
+Legacy alias: `https://www.etoro.com/api/public/v1` (works but not canonical)
+Auth: X-API-KEY + X-USER-KEY (regular, not PERSONAL) + X-REQUEST-ID (UUID) + User-Agent
+
 ## CI
 
 - `ci.yml`: ruff check + format → pytest with hashed lockfile (Python 3.12, push/PR to master)
