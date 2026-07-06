@@ -139,7 +139,7 @@ All workflows run against the `master` branch.
 etoro_statement/
 ├── etoro_summary.py                                       # entire application
 ├── tests/
-│   └── test_etoro_summary.py                              # ~15 tests across 5 classes
+│   └── test_etoro_summary.py                              # 11 tests across 5 classes
 ├── etoro-account-statement-1-1-2023-2-21-2026.xlsx        # sample eToro workbook
 ├── etoro-account-statement-1-1-2023-2-21-2026_summary.csv # sample summary output
 ├── example_output.png                                     # screenshot of the Rich table
