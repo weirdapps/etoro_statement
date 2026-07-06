@@ -1,26 +1,36 @@
+[project]
+name = "etoro-statement"
+version = "0.1.0"
+description = "eToro account statement summariser"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=3.0,<4.0.0",
+    "openpyxl>=3.1.5,<4.0.0",
+    "rich>=15.0.0,<16.0.0",
+    "tabulate>=0.10.0,<1.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+]
+
+[tool.uv]
+package = false
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-]
-ignore = [
-    "E501",  # line too long (handled by formatter)
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B008", "C901"]
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]  # unused imports OK in __init__.py
-"tests/**/*.py" = ["B", "E"]  # relax rules for tests
+"__init__.py" = ["F401"]
+"tests/**/*.py" = ["B", "E"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -38,15 +48,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "--verbose",
-    "--strict-markers",
-    "--cov=.",
-    "--cov-report=term-missing",
-    "--cov-report=xml",
-]
-filterwarnings = [
-    "error",
-    "ignore::DeprecationWarning",
-    "ignore::pytest.PytestConfigWarning",
-]
+addopts = ["--verbose", "--strict-markers", "--cov=.", "--cov-report=term-missing", "--cov-report=xml"]
+filterwarnings = ["error", "ignore::DeprecationWarning", "ignore::pytest.PytestConfigWarning"]
+
+[tool.coverage.run]
+omit = [".venv/*", "venv/*", "tests/*"]

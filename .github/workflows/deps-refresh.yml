@@ -1,46 +1,30 @@
 name: Monthly Dependency Refresh
-
 on:
   schedule:
     - cron: "23 4 6 * *"
   workflow_dispatch: {}
-
 permissions:
   contents: write
   pull-requests: write
-
 concurrency:
   group: deps-refresh
   cancel-in-progress: false
-
 jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
-
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: astral-sh/setup-uv@d31148d669074a8d0a63714ba94f3201e7020bc3 # v8.3.0
         with:
           python-version: "3.12"
-
       - name: Refresh lockfile
-        run: |
-          pip install pip-tools
-          pip-compile --upgrade --generate-hashes \
-            --output-file=requirements-lock.txt requirements.txt
-
+        run: uv lock --upgrade
       - name: Validate (install + tests)
         run: |
-          pip install --require-hashes -r requirements-lock.txt
-          pip install pytest pytest-cov
-          pytest || exit_code=$?
-          if [ "${exit_code:-0}" -eq 5 ]; then
-            echo "No tests collected — skipping"
-          else
-            exit ${exit_code:-0}
-          fi
-
+          uv sync --frozen
+          uv run pytest || exit_code=$?
+          if [ "${exit_code:-0}" -eq 5 ]; then echo "No tests collected — skipping"; else exit ${exit_code:-0}; fi
       - name: Open PR with refreshed lockfile
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
@@ -50,7 +34,6 @@ jobs:
           commit-message: "deps: monthly lockfile refresh"
           title: "deps: monthly dependency refresh"
           body: |
-            Automated monthly refresh of the committed lockfile to the latest
-            resolver-compatible versions. CI (tests) passed on this branch.
-            Review and merge if green.
+            Automated monthly refresh of uv.lock to the latest resolver-compatible
+            versions. CI passed on this branch. Review and merge if green.
           labels: dependencies
