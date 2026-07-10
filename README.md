@@ -18,7 +18,7 @@ It does one thing, in one script (`etoro_summary.py`, about 300 lines), with no 
 ## Pipeline
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[eToro .xlsx statement] --> B[pandas read_excel]
     B --> C{Two sheets}
     C -->|Account Summary| D[deposits, withdrawals,<br/>ending equities]
