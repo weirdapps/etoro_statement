@@ -43,12 +43,13 @@ Grounded in `etoro_summary.py`:
 - Terminal output uses `rich` with four sections (Investment, Realized, Unrealized, Performance); positive values render green, negative red.
 - Persists the same metrics to a CSV named `<input>_summary.csv` in the same directory as the source workbook.
 - Exits with a clear error on missing input or unloadable file.
+- If no amount column can be matched at all, it prints `ERROR: Could not find amount column in Financial Summary sheet` but still exits 0 and still writes the CSV, with every `Financial Summary` metric left at zero. Check that line before trusting the numbers.
 
 ## Example output
 
 ![Rich-formatted eToro financial summary table in the terminal](example_output.png)
 
-A minimal CSV counterpart is committed as `etoro-account-statement-1-1-2023-2-21-2026_summary.csv` next to the sample workbook.
+The CSV counterpart holds the same rows as `Metric,Value` pairs.
 
 ## Requirements
 
@@ -60,7 +61,7 @@ Runtime dependencies (pinned in `uv.lock`):
 - `pandas` (3.x)
 - `openpyxl` (3.1+)
 - `rich` (15.x)
-- `tabulate` (0.10+)
+- `tabulate` (0.10+, declared but not imported by the code)
 
 ## Installation
 
@@ -86,11 +87,9 @@ The tool will:
 2. Print a Rich-formatted summary table to the terminal.
 3. Write `path/to/etoro-account-statement_summary.csv` next to the input.
 
-A real anonymised eToro statement covering 2023 to Feb 2026 is committed as `etoro-account-statement-1-1-2023-2-21-2026.xlsx`, so you can try the tool without exporting your own:
-
-```bash
-uv run python etoro_summary.py etoro-account-statement-1-1-2023-2-21-2026.xlsx
-```
+No sample workbook is committed. `.gitignore` excludes `*.xlsx`, `*.xls` and `*.csv`, so a real
+statement and its generated summary stay out of this public repository. Export your own statement
+from eToro and pass its path.
 
 ## How eToro's data maps to the output sections
 
@@ -121,6 +120,13 @@ uv run pytest
 
 The test suite (`tests/test_etoro_summary.py`) covers ROI edge cases (positive, negative, zero investment, zero profit), the shape of the metrics dictionary, table construction on synthetic data, and the missing-file error path.
 
+Optionally install the pre-commit hooks (`.pre-commit-config.yaml`), which add mypy, gitleaks,
+yamllint and markdownlint on top of ruff. None of these four run in CI.
+
+```bash
+uv run --with pre-commit pre-commit install
+```
+
 ## Continuous Integration
 
 All workflows run against the `master` branch.
@@ -131,21 +137,24 @@ All workflows run against the `master` branch.
 | CodeQL | [`codeql.yml`](.github/workflows/codeql.yml) | push, PR, weekly (Mon 06:00 UTC) |
 | SonarCloud | [`sonarcloud.yml`](.github/workflows/sonarcloud.yml) | push, PR, manual (skipped if `SONAR_TOKEN` unset) |
 | Monthly Dependency Refresh | [`deps-refresh.yml`](.github/workflows/deps-refresh.yml) | 6th of each month, 04:23 UTC (opens PR with a fresh `uv.lock`) |
-| Dependabot auto-merge | [`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml) | Dependabot PRs (patch and minor auto-merge; major stays manual) |
+| Dependabot auto-merge | [`dependabot-auto-merge.yml`](.github/workflows/dependabot-auto-merge.yml) | Dependabot PRs. A thin caller that delegates to the shared reusable workflow `weirdapps/shared-workflows/.github/workflows/dependabot-auto-merge.yml@main` |
+
+The caller passes no inputs, so the shared workflow's defaults apply: patch and minor updates
+auto-merge once the PR's own checks are green, a standalone major stays open for review, and a
+grouped update auto-merges even when its aggregate level is major.
 
 ## Project layout
 
 ```text
 etoro_statement/
-├── etoro_summary.py                                       # entire application
+├── etoro_summary.py            # entire application
 ├── tests/
-│   └── test_etoro_summary.py                              # 11 tests across 5 classes
-├── etoro-account-statement-1-1-2023-2-21-2026.xlsx        # sample eToro workbook
-├── etoro-account-statement-1-1-2023-2-21-2026_summary.csv # sample summary output
-├── example_output.png                                     # screenshot of the Rich table
-├── pyproject.toml                                         # deps + ruff/mypy/pytest config
-├── uv.lock                                                # pinned dependency graph
-└── .github/workflows/                                     # CI, CodeQL, SonarCloud, deps refresh
+│   └── test_etoro_summary.py   # 11 tests across 5 classes
+├── example_output.png          # screenshot of the Rich table
+├── pyproject.toml              # deps + ruff/mypy/pytest config
+├── uv.lock                     # pinned dependency graph
+├── .pre-commit-config.yaml     # ruff, mypy, gitleaks, yamllint, markdownlint
+└── .github/workflows/          # CI, CodeQL, SonarCloud, deps refresh, Dependabot auto-merge
 ```
 
 ## Security
