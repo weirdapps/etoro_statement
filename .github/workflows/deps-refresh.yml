@@ -25,12 +25,14 @@ jobs:
       # action_required by the repo's fork-PR approval policy, leaving the PR
       # with zero check runs. This step is then the only gate the refresh gets,
       # and a lockfile bump can move ruff itself, so lint and format must run
-      # here too, not just pytest.
+      # here too, not just pytest. `--frozen --no-build` keeps the lockfile we
+      # just validated authoritative and stops a freshly upgraded, unreviewed
+      # sdist from running its build scripts on the runner.
       - name: Validate (install + lint + format + tests)
         run: |
           uv sync --frozen
-          uv run ruff check .
-          uv run ruff format --check .
+          uv run --frozen --no-build ruff check .
+          uv run --frozen --no-build ruff format --check .
           uv run pytest || exit_code=$?
           if [ "${exit_code:-0}" -eq 5 ]; then echo "No tests collected, skipping"; else exit ${exit_code:-0}; fi
       - name: Open PR with refreshed lockfile
