@@ -62,23 +62,33 @@ being asked.
 - `codeql.yml`: CodeQL python analysis (push/PR + Mondays 06:00 UTC)
 - `sonarcloud.yml`: `uv sync --frozen` → pytest --cov → SonarCloud scan (skipped if `SONAR_TOKEN` unset)
 - `deps-refresh.yml`: monthly `uv lock --upgrade` → validate (ruff check + ruff format --check +
-  pytest, deliberately mirrors `ci.yml`) → auto PR (6th, 04:23 UTC)
+  pytest, deliberately mirrors `ci.yml`) → auto PR (6th, 04:23 UTC) → republish the validate verdict
+  as a `deps-refresh / validate` commit status on the new PR head
 - `dependabot-auto-merge.yml`: thin caller, delegates to
   `weirdapps/shared-workflows/.github/workflows/dependabot-auto-merge.yml@main`. No inputs passed, so
   defaults apply: patch/minor auto-merge, standalone major stays manual, grouped major auto-merges.
   Do not reintroduce a local implementation
 
-### If a deps-refresh PR shows "no checks reported"
+### Why a deps-refresh PR carries only one check
 
 `PUSH_PAT` is not set on this repo, so `deps-refresh.yml` falls back to `github.token` and the PR is
-authored by `github-actions[bot]`. This repo's Actions setting
-`fork-pr-contributor-approval` is `first_time_contributors`, so while that bot had no commit on
-`master` every workflow run on its PRs was parked at `conclusion: action_required` with zero check
-runs. PR #45 (merged 2026-08-11) put a squash commit authored by `github-actions[bot]` on `master`,
-which promoted it to `author_association: CONTRIBUTOR` and lifted the gate, exactly as had already
-happened for `dependabot[bot]`. If it ever recurs, release the runs with
-`gh api --method POST repos/weirdapps/etoro_statement/actions/runs/<id>/approve`. Do not loosen the
-approval policy.
+opened by `github-actions[bot]`. GitHub parks every workflow run whose triggering actor is that
+identity at `conclusion: action_required` with **zero check runs**, which is why such a PR reads as
+"no checks reported" rather than as failing. Verified 2026-08-11 on PR #45 and again on PR #49.
+
+Two things that look like the cause but are not, both falsified by experiment:
+
+- The `fork-pr-contributor-approval` policy (`first_time_contributors`). PR #45's merge promoted
+  `github-actions[bot]` to `author_association: CONTRIBUTOR`, yet the very next refresh PR (#49) was
+  still parked. The gate keys on the triggering actor, not on contributor status.
+- Branch protection. `master` has only `deletion` and `non_fast_forward` rules and no required
+  status checks.
+
+So `deps-refresh.yml` republishes its own validate verdict as a `deps-refresh / validate` commit
+status on the new head. To also get the native CI, CodeQL and SonarCloud results, release the parked
+runs with `gh api --method POST repos/weirdapps/etoro_statement/actions/runs/<id>/approve`. The real
+fix is a `PUSH_PAT` repo secret (PAT or GitHub App token) so the PR is not bot-authored. Do not
+loosen the approval policy to work around this.
 
 ## Key Conventions
 

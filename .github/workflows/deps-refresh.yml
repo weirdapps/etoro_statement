@@ -6,6 +6,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  statuses: write
 concurrency:
   group: deps-refresh
   cancel-in-progress: false
@@ -20,14 +21,14 @@ jobs:
           python-version: "3.12"
       - name: Refresh lockfile
         run: uv lock --upgrade
-      # Must mirror ci.yml exactly. The PR this job opens is authored by
-      # github-actions[bot], so its workflow runs can be parked at
-      # action_required by the repo's fork-PR approval policy, leaving the PR
-      # with zero check runs. This step is then the only gate the refresh gets,
-      # and a lockfile bump can move ruff itself, so lint and format must run
-      # here too, not just pytest. `--frozen --no-build` keeps the lockfile we
-      # just validated authoritative and stops a freshly upgraded, unreviewed
-      # sdist from running its build scripts on the runner.
+      # Must mirror ci.yml exactly. `PUSH_PAT` is unset on this repo, so the PR
+      # below is opened by github-actions[bot], and GitHub parks every workflow
+      # run whose triggering actor is that identity at `action_required` with
+      # zero check runs. This step is therefore the only gate the refresh
+      # actually gets, and a lockfile bump can move ruff itself, so lint and
+      # format have to run here too, not just pytest. `--frozen --no-build`
+      # keeps the lockfile we just validated authoritative and stops a freshly
+      # upgraded, unreviewed sdist from running its build scripts on the runner.
       - name: Validate (install + lint + format + tests)
         run: |
           uv sync --frozen
@@ -36,6 +37,7 @@ jobs:
           uv run pytest || exit_code=$?
           if [ "${exit_code:-0}" -eq 5 ]; then echo "No tests collected, skipping"; else exit ${exit_code:-0}; fi
       - name: Open PR with refreshed lockfile
+        id: cpr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.PUSH_PAT || github.token }}
@@ -45,5 +47,35 @@ jobs:
           title: "deps: monthly dependency refresh"
           body: |
             Automated monthly refresh of uv.lock to the latest resolver-compatible
-            versions. CI passed on this branch. Review and merge if green.
+            versions.
+
+            The `Validate` step of the run that opened this PR ran the full
+            `ci.yml` gate (`ruff check`, `ruff format --check`, `pytest`) against
+            this exact lockfile and passed. That result is republished here as the
+            `deps-refresh / validate` commit status.
+
+            `PUSH_PAT` is unset, so this PR is opened by `github-actions[bot]` and
+            GitHub parks every workflow run it triggers at `action_required` with
+            zero check runs. To also get the native CI, CodeQL and SonarCloud
+            results, release those runs with:
+
+            `gh api --method POST repos/OWNER/REPO/actions/runs/RUN_ID/approve`
           labels: dependencies
+      # This job runs on schedule/workflow_dispatch in the base repo, so it is
+      # never gated. Republishing its verdict is the only way the PR carries any
+      # check at all while PUSH_PAT is unset. The commit the action just pushed
+      # holds exactly the lockfile the Validate step passed on, and this step is
+      # only reached when that step succeeded.
+      - name: Publish validation verdict as a commit status
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh api "repos/$REPO/statuses/$HEAD_SHA" \
+            -f state=success \
+            -f context='deps-refresh / validate' \
+            -f description='ruff check + ruff format --check + pytest passed on this lockfile' \
+            -f target_url="$RUN_URL"
