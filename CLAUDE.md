@@ -61,11 +61,24 @@ being asked.
 - `ci.yml`: `uv sync --frozen` → ruff check + ruff format --check → pytest (Python 3.12, push/PR to master)
 - `codeql.yml`: CodeQL python analysis (push/PR + Mondays 06:00 UTC)
 - `sonarcloud.yml`: `uv sync --frozen` → pytest --cov → SonarCloud scan (skipped if `SONAR_TOKEN` unset)
-- `deps-refresh.yml`: monthly `uv lock --upgrade` → validate → auto PR (6th, 04:23 UTC)
+- `deps-refresh.yml`: monthly `uv lock --upgrade` → validate (ruff check + ruff format --check +
+  pytest, deliberately mirrors `ci.yml`) → auto PR (6th, 04:23 UTC)
 - `dependabot-auto-merge.yml`: thin caller, delegates to
   `weirdapps/shared-workflows/.github/workflows/dependabot-auto-merge.yml@main`. No inputs passed, so
   defaults apply: patch/minor auto-merge, standalone major stays manual, grouped major auto-merges.
   Do not reintroduce a local implementation
+
+### If a deps-refresh PR shows "no checks reported"
+
+`PUSH_PAT` is not set on this repo, so `deps-refresh.yml` falls back to `github.token` and the PR is
+authored by `github-actions[bot]`. This repo's Actions setting
+`fork-pr-contributor-approval` is `first_time_contributors`, so while that bot had no commit on
+`master` every workflow run on its PRs was parked at `conclusion: action_required` with zero check
+runs. PR #45 (merged 2026-08-11) put a squash commit authored by `github-actions[bot]` on `master`,
+which promoted it to `author_association: CONTRIBUTOR` and lifted the gate, exactly as had already
+happened for `dependabot[bot]`. If it ever recurs, release the runs with
+`gh api --method POST repos/weirdapps/etoro_statement/actions/runs/<id>/approve`. Do not loosen the
+approval policy.
 
 ## Key Conventions
 
