@@ -20,11 +20,21 @@ jobs:
           python-version: "3.12"
       - name: Refresh lockfile
         run: uv lock --upgrade
-      - name: Validate (install + tests)
+      # Must mirror ci.yml exactly. The PR this job opens is authored by
+      # github-actions[bot], so its workflow runs can be parked at
+      # action_required by the repo's fork-PR approval policy, leaving the PR
+      # with zero check runs. This step is then the only gate the refresh gets,
+      # and a lockfile bump can move ruff itself, so lint and format must run
+      # here too, not just pytest. `--frozen --no-build` keeps the lockfile we
+      # just validated authoritative and stops a freshly upgraded, unreviewed
+      # sdist from running its build scripts on the runner.
+      - name: Validate (install + lint + format + tests)
         run: |
           uv sync --frozen
+          uv run --frozen --no-build ruff check .
+          uv run --frozen --no-build ruff format --check .
           uv run pytest || exit_code=$?
-          if [ "${exit_code:-0}" -eq 5 ]; then echo "No tests collected — skipping"; else exit ${exit_code:-0}; fi
+          if [ "${exit_code:-0}" -eq 5 ]; then echo "No tests collected, skipping"; else exit ${exit_code:-0}; fi
       - name: Open PR with refreshed lockfile
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
