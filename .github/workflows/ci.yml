@@ -24,10 +24,21 @@ jobs:
         with:
           python-version: '3.12'
       - run: uv sync --frozen
+      # Exit 5 is pytest for "no tests collected", and this treated it as
+      # success. A suite that silently empties -- a renamed directory, a broken
+      # import, a conftest that raises -- would have reported green forever.
+      # Assert a floor instead: the count only ever goes up.
       - run: |
-          uv run pytest || exit_code=$?
-          if [ "${exit_code:-0}" -eq 5 ]; then
-            echo "No tests collected — skipping"
-          else
-            exit ${exit_code:-0}
+          # Parse pytest's own summary line ("N tests collected"). Counting
+          # node-id lines does not work here: this project has coverage enabled
+          # in addopts, so -q output ends with a coverage table, not node ids.
+          COLLECTED=$(uv run pytest --collect-only -q 2>/dev/null \
+                        | grep -oE '[0-9]+ tests? collected' | grep -oE '^[0-9]+')
+          COLLECTED=${COLLECTED:-0}
+          echo "collected: $COLLECTED"
+          if [ "$COLLECTED" -lt 10 ]; then
+            echo "::error::only $COLLECTED tests collected, expected at least 10. \
+          A suite that shrinks this far is a collection failure, not a smaller suite."
+            exit 1
           fi
+          uv run pytest
