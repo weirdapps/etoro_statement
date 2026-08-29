@@ -44,10 +44,10 @@ jobs:
       - name: Fail if the server-side analysis failed
         # The scanner exits 0 the moment the report finishes uploading. Anything
         # that rejects the analysis afterwards happens in SonarCloud's Compute
-        # Engine, which this job never looks at, so it goes green while nothing
+        # Engine, which this job never looked at, so it went green while nothing
         # was measured. That is how weirdapps_plessas-lab stayed broken from
-        # creation to 2026-08-29 with every run reporting success, and it is how
-        # the free plan's 50,000-line org ceiling takes every repo down at once
+        # creation to 2026-08-29 with every run reporting success, and how the
+        # free plan's 50,000-line org ceiling takes every repo down at once
         # without producing a single red build anywhere.
         if: steps.check-sonar.outputs.has_token == 'true'
         env:
@@ -60,19 +60,18 @@ jobs:
             exit 1
           fi
           task_url=$(sed -n 's/^ceTaskUrl=//p' "$report")
+          get() { python3 -c "import json,sys;print(json.load(sys.stdin)['task']$1)"; }
           for _ in $(seq 1 60); do
             body=$(curl -sS -u "${SONAR_TOKEN}:" "$task_url" || true)
-            status=$(printf '%s' "$body" \
-              | python3 -c "import json,sys;print(json.load(sys.stdin)['task']['status'])" 2>/dev/null \
-              || echo RETRY)
+            status=$(printf '%s' "$body" | get "['status']" 2>/dev/null || echo RETRY)
             case "$status" in
               SUCCESS)
                 echo "Analysis completed server-side."
                 exit 0
                 ;;
               FAILED|CANCELED)
-                printf '%s' "$body" \
-                  | python3 -c "import json,sys;t=json.load(sys.stdin)['task'];print('::error::SonarCloud analysis '+t['status']+': '+t.get('errorMessage','no message'))"
+                msg=$(printf '%s' "$body" | get ".get('errorMessage','no message')")
+                echo "::error::SonarCloud analysis $status: $msg"
                 exit 1
                 ;;
             esac
