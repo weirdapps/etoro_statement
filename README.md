@@ -102,7 +102,7 @@ from eToro and pass its path.
 
 Categorisation of `Financial Summary` rows follows the rules in `process_etoro_statement`:
 
-- Any row whose `Name` contains `Profit or Loss` with a positive amount is added to Realized Gains.
+- Any row whose `Name` contains `Profit or Loss` counts towards Realized Gains: a positive amount adds to it and a negative amount (a realised loss) subtracts from it, so Realized Gains is net and can be negative. The one exception is a loss row whose `Name` also contains `Dividend`, `fee` or `charge`, which the matching rule below takes instead.
 - Any row whose `Name` contains `Dividend` is added to Dividend Income.
 - Any row whose `Name` contains `fee` or `charge`, or any other negative amount not already categorised, is added to Total Expenses and Fees (stored as a positive number, subtracted from profit at the end).
 - Any remaining positive amount is added to Other Income.
@@ -118,7 +118,7 @@ uv run ruff format --check .
 uv run pytest
 ```
 
-The test suite (`tests/test_etoro_summary.py`) covers ROI edge cases (positive, negative, zero investment, zero profit), the shape of the metrics dictionary, table construction on synthetic data, and the missing-file error path.
+The test suite (`tests/test_etoro_summary.py`) covers ROI edge cases (positive, negative, zero investment, zero profit), the shape of the metrics dictionary, table construction on synthetic data, the missing-file error path, and the categorisation of a synthetic statement that includes a realised loss.
 
 Optionally install the pre-commit hooks (`.pre-commit-config.yaml`), which add mypy, gitleaks,
 yamllint and markdownlint on top of ruff. None of these four run in CI.
@@ -149,7 +149,7 @@ grouped update auto-merges even when its aggregate level is major.
 etoro_statement/
 ├── etoro_summary.py            # entire application
 ├── tests/
-│   └── test_etoro_summary.py   # 11 tests across 5 classes
+│   └── test_etoro_summary.py   # 12 tests across 6 classes
 ├── example_output.png          # screenshot of the Rich table
 ├── pyproject.toml              # deps + ruff/mypy/pytest config
 ├── uv.lock                     # pinned dependency graph

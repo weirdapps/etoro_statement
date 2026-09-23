@@ -33,19 +33,22 @@ Flat single-script layout, no package structure:
 
 ```text
 etoro_statement/
-├── etoro_summary.py           ← entire application (293 lines)
+├── etoro_summary.py           ← entire application (297 lines)
 │   ├── process_etoro_statement(file_path)  ← reads Account Summary + Financial Summary sheets
 │   ├── calculate_roi(metrics)              ← net realized profit / net investment
 │   ├── format_financial_table(metrics)     ← Rich table (4 sections, green/red coloring)
 │   └── main()                             ← CLI entry, prints table, saves CSV
 └── tests/
-    └── test_etoro_summary.py              ← 5 test classes, 11 tests (no Excel I/O mocking)
+    └── test_etoro_summary.py              ← 6 test classes, 12 tests (no Excel I/O mocking)
 ```
 
 ## Key Behaviors
 
 - Reads two sheets from the eToro Excel: `Account Summary` and `Financial Summary`
 - Extracts: deposits, withdrawals, realized gains, dividends, fees, equity
+- Realized Gains is net: a negative `Profit or Loss` row (a realized loss) subtracts from it. Until
+  2026-09-23 such rows matched no branch and were dropped, so older outputs overstate Realized Gains,
+  Net Realized Profit and ROI for any year with a loss
 - Handles 4 column-name variants for the amount column (eToro changes these between exports)
 - Rich table sections: Investment / Realized / Unrealized / Performance
 - Positive values colored green, negative red

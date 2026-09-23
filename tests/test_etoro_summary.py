@@ -1,5 +1,6 @@
 """Tests for etoro_summary.py."""
 
+import pandas as pd
 import pytest
 
 from etoro_summary import (
@@ -40,6 +41,18 @@ def _empty_metrics():
         CURRENT_UNREALIZED_EQUITY: 0.0,
         UNREALIZED_PROFIT: 0.0,
     }
+
+
+def _write_statement(path, account_rows, financial_rows):
+    """Write a synthetic two-sheet eToro statement to ``path``. Fabricated figures only."""
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        pd.DataFrame(account_rows, columns=["Details", "Amount"]).to_excel(
+            writer, sheet_name="Account Summary", index=False
+        )
+        pd.DataFrame(financial_rows, columns=["Name", "Amount in (USD)"]).to_excel(
+            writer, sheet_name="Financial Summary", index=False
+        )
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -166,3 +179,34 @@ class TestProcessStatementErrors:
     def test_missing_file_exits(self):
         with pytest.raises(SystemExit):
             process_etoro_statement("/nonexistent/file.xlsx")
+
+
+# ---------------------------------------------------------------------------
+# 6. process_etoro_statement categorisation
+# ---------------------------------------------------------------------------
+
+
+class TestProcessStatementCategorisation:
+    """Run process_etoro_statement on a synthetic statement and check the buckets."""
+
+    def test_negative_profit_or_loss_nets_against_realized_gains(self, tmp_path):
+        # Regression: a negative "Profit or Loss" row matched no branch and was
+        # dropped, so this statement reported Realized Gains 500, Net Realized
+        # Profit 520 and ROI +5.20% instead of 200, 220 and +2.20%.
+        statement = _write_statement(
+            tmp_path / "statement.xlsx",
+            account_rows=[("Deposits", 10000.0)],
+            financial_rows=[
+                ("Stocks (Profit or Loss)", 500.0),
+                ("CFDs (Profit or Loss)", -300.0),
+                ("Dividends", 20.0),
+            ],
+        )
+
+        metrics = process_etoro_statement(statement)
+
+        assert metrics[REALIZED_GAINS] == pytest.approx(200.0)
+        assert metrics[DIVIDEND_INCOME] == pytest.approx(20.0)
+        assert metrics[TOTAL_EXPENSES_AND_FEES] == pytest.approx(0.0)
+        assert metrics[NET_REALIZED_PROFIT] == pytest.approx(220.0)
+        assert calculate_roi(metrics)[1] == "+2.20%"

@@ -129,6 +129,10 @@ def process_etoro_statement(file_path):  # noqa: S3776 - sequential data extract
                 metrics[TOTAL_EXPENSES_AND_FEES] += abs(amount)
             elif amount > 0 and PROFIT_OR_LOSS not in name and "Dividend" not in name:
                 metrics[OTHER_INCOME] += amount
+            elif PROFIT_OR_LOSS in name and amount < 0:
+                # A realized loss nets against Realized Gains. Checked last, so a loss
+                # row naming a dividend, fee or charge keeps the routing above.
+                metrics[REALIZED_GAINS] += amount
 
     # 4. Calculate Net Realized Profit
     metrics[NET_REALIZED_PROFIT] = (
